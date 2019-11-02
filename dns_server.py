@@ -300,6 +300,32 @@ def logAnswerSection(data, domain):
         
         index += rdlength
 
+def getTtl(data, domain):
+    try:
+        question, answersNumber, nscount, arcount  = struct.unpack('>HHHH', bytes(data[4:12]))
+        if answersNumber <= 0:
+            return
+
+        index = 12
+        if domain[-1] == '.':
+            domain = domain[:-1]
+        index += len(domain) + 6
+
+
+        for _ in range(0, answersNumber):
+            
+            try:
+                index += 6
+                
+                ttl, = struct.unpack('>I', bytes(data[index:index + 4]))
+
+                return ttl + 1000
+            except expression as identifier:
+                break
+
+    except expression as identifier:
+        return 10000
+    
 def recSearchResult(data, roots, currIps):
     global rootDnsIndex
 
@@ -308,7 +334,8 @@ def recSearchResult(data, roots, currIps):
     if (domain, qtype) in caching:
         currTime = int(round(time.time() * 1000))
 
-        if currTime - caching[(domain, qtype)][1] < 10000:
+        ttl = getTtl(caching[(domain, qtype)][0], domain)
+        if currTime - caching[(domain, qtype)][1] < ttl:
             return (data[:2] + caching[(domain, qtype)][0][2:], True)
 
     for curr in currIps:
@@ -359,7 +386,6 @@ def recSearchResult(data, roots, currIps):
                             return res
 
         except Exception:
-            print('alohaaaaaaaaaaaa')
             pass
         finally:
             sock.close()
